@@ -59,11 +59,6 @@ fclean: clean
 # ~~~~~~~~~ REMAKE AND EXEC RULE ~~~~~~~~~~
 re: fclean all
 
-exec : all
-	printf "$(BOLD)$(YELLOW)starting program : $(END)$(PROGRAM) \n"
-	printf "Author : $(AUTHOR)\n\n\n"
-	./$(PROGRAM)
-
 
 # --> HEADER -------------------------------------------------------------------
 
