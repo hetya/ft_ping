@@ -6,7 +6,7 @@
 /*   By: unknown <unknown>                          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/01/28 16:47:03 by unknown           #+#    #+#             */
-/*   Updated: 2025/01/31 17:45:51 by unknown          ###   ########.fr       */
+/*   Updated: 2025/02/03 17:18:51 by unknown          ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -88,6 +88,7 @@ int	main(int argc, char **argv)
 {
 	int				socket_fd;
 	struct icmphdr	icmp_header;
+	int				len_received_ip_packet;
 
 	if (getuid() != 0)
 	{
@@ -102,17 +103,38 @@ int	main(int argc, char **argv)
 	socket_fd = create_socket_and_connect(argv[1]);
 	icmp_header.type = ICMP_ECHO;
 	icmp_header.code = 0;
-	icmp_header.checksum = 0;
 	icmp_header.un.echo.id = getpid();
 	icmp_header.un.echo.sequence = 0;
+	icmp_header.checksum = 0;
 	icmp_header.checksum = icmp_checksum(&icmp_header);
 	// data
 	while(1)
 	{
-		send(socket_fd, &icmp_header, sizeof(icmp_header), 0);
-		// sleep(1);
-
+		printf("Packet :\n icmp_type=%d\n icmp_code=%d\n icmp_checksum=%d\n icmp_id=%d\n icmp_seq=%d\n",
+			icmp_header.type, icmp_header.code, icmp_header.checksum, icmp_header.un.echo.id, icmp_header.un.echo.sequence);
+		if (send(socket_fd, &icmp_header, sizeof(icmp_header), 0) == -1)
+		{
+			perror("send");
+			return (1);
+		}
+		printf("Sent ICMP packet\n");
+		char receive_buffer[1024];
+		len_received_ip_packet = recv(socket_fd, receive_buffer, sizeof(receive_buffer), 0);
+		if (len_received_ip_packet == -1)
+		{
+			perror("recv");
+			return (1);
+		}
+		printf("Received IP packet: len %d\n");
+		printf("=====\n", len_received_ip_packet);
+		write(1, receive_buffer, len_received_ip_packet);
+		printf("\n=====\n");
+		// printf("Received ICMP packet icmp_seq=%d\n", icmp_header.un.echo.sequence);
+		// icmp_header.un.echo.sequence++;
+		printf("icmp_seq=%d\n", icmp_header.un.echo.sequence);
+		sleep(1);
 	}
+	// duplicate package
 	printf("ICMP size: %ld\n", sizeof(icmp_header));
 	send(socket_fd, &icmp_header, sizeof(icmp_header), 0);
 
