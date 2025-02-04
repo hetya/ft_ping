@@ -5,7 +5,9 @@ PROGRAM = ft_ping
 # ~~~~~~~~~~~~~~~~ SOURCES ~~~~~~~~~~~~~~~~
 
 SRCS_PATH		=	srcs
-SRCS    =	main.c
+SRCS    =	main.c \
+			icmp.c \
+			utils.c
 			
 
 # ~~~~~~~~~~~~~~~~ OBJECTS ~~~~~~~~~~~~~~~~

@@ -12,25 +12,20 @@
 
 #include "ft_ping.h"
 
-double get_time_in_ms(){
-    struct timespec ts;
-    clock_gettime(CLOCK_MONOTONIC, &ts);
-    return ts.tv_sec * 1000.0 + ts.tv_nsec / 1000000.0;
-}
+bool g_exit = 0;
 
-int	create_socket_and_connect(char *hostname)
+int	create_socket_and_connect(t_ping *ping)
 {
 	struct addrinfo	hints;
 	struct addrinfo	*res;
 	struct addrinfo	*address_list;
-	int				sockfd;
 	int				status;
 
 	memset(&hints, 0, sizeof(hints));
 	hints.ai_family = AF_UNSPEC;
 	hints.ai_socktype = SOCK_RAW;
 	hints.ai_protocol = IPPROTO_ICMP;
-	status = getaddrinfo(hostname, NULL, &hints, &res);
+	status = getaddrinfo(ping->dest_hostname, NULL, &hints, &res);
 	if (status != 0)
 	{
 		fprintf(stderr, "getaddrinfo: %s\n", gai_strerror(status));
@@ -40,65 +35,51 @@ int	create_socket_and_connect(char *hostname)
 	while (address_list != NULL)
 	{
 		// Uttiliser so_broadcast
-		sockfd = socket(address_list->ai_family, address_list->ai_socktype,
+		ping->socket_fd = socket(address_list->ai_family, address_list->ai_socktype,
 				address_list->ai_protocol);
-		if (sockfd == -1)
+		if (ping->socket_fd == -1)
 		{
 			perror("socket");
 			address_list = address_list->ai_next;
 			continue ;
 		}
-		if (connect(sockfd, address_list->ai_addr, address_list->ai_addrlen)
+		if (connect(ping->socket_fd, address_list->ai_addr, address_list->ai_addrlen)
 			== -1)
 		{
 			perror("connect");
-			close(sockfd);
+			close(ping->socket_fd);
 			address_list = address_list->ai_next;
 			continue ;
 		}
+		ping->dest_ip = inet_ntoa(((struct sockaddr_in *)address_list->ai_addr)->sin_addr);
 		break ;
-		address_list = address_list->ai_next;
 	}
 	if (address_list == NULL)
 	{
-		fprintf(stderr, "Can't resolve hostname %s\n", hostname);
+		fprintf(stderr, "Can't resolve hostname %s\n", ping->dest_hostname);
 		freeaddrinfo(res);
 		return (1);
 	}
 	freeaddrinfo(res);
-	printf("PING %s \n", hostname);
-	return (sockfd);
+	return (ping->socket_fd);
 }
 
-uint16_t	icmp_checksum(struct icmphdr *icmp)
+void	handle_exit(int sig)
 {
-	int			len;
-	uint32_t	sum;
-	uint16_t	one_complement;
-	uint16_t	*ptr;
-
-	ptr = (uint16_t *)icmp;
-	sum = 0;
-	for (len = sizeof(struct icmphdr); len > 1; len -= 2)
-		sum += *ptr++;
-	if (len == 1)
-		sum += *(unsigned char *)ptr;
-	sum = (sum >> 16) + (sum & 0xFFFF);
-	sum += (sum >> 16);
-	one_complement = ~sum;
-	return (one_complement);
+	if (sig == SIGINT)
+	{
+		g_exit = 1;
+	}
 }
-
 
 int	main(int argc, char **argv)
 {
-	int				socket_fd;
-	struct icmphdr	icmp_header;
 	int				len_received_ip_packet;
 	double			send_time;
 	double			receive_time;
 	int				nb_packets_sent;
 	int				nb_packets_received;
+	t_ping 			ping;
 
 
 	if (getuid() != 0)
@@ -111,33 +92,33 @@ int	main(int argc, char **argv)
 		printf("Usage: %s <hostname>\n", argv[0]);
 		return (1);
 	}
-	socket_fd = create_socket_and_connect(argv[1]);
-	icmp_header.type = ICMP_ECHO;
-	icmp_header.code = 0;
-	icmp_header.un.echo.id = getpid();
-	icmp_header.un.echo.sequence = 0;
-	icmp_header.checksum = 0;
-	icmp_header.checksum = icmp_checksum(&icmp_header);
+	signal(SIGINT, handle_exit);
+	memset(&ping, 0, sizeof(ping));
+	// signal(SIGINT, handle_exit);
+	ping.socket_fd = -1;
+	ping.dest_hostname = argv[1];
+	create_socket_and_connect(&ping);
+	create_icmp_package(&ping);
+	printf("PING %s (%s).\n", ping.dest_hostname, ping.dest_ip);
 	// data + size buf
+	// check internet checksum + duplicate package
+	// queue for recv?
+	// close fd when ctrl+c
 	nb_packets_sent = 0;
 	nb_packets_received = 0;
-	while(1)
+	while(!g_exit)
 	{
 		// recreate the checksum since the sequence number has changed
-		icmp_header.checksum = 0;
-		icmp_header.checksum = icmp_checksum(&icmp_header);
-
-		// printf("Packet :\n icmp_type=%d\n icmp_code=%d\n icmp_checksum=%d\n icmp_id=%d\n icmp_seq=%d\n",
-		// 	icmp_header.type, icmp_header.code, icmp_header.checksum, icmp_header.un.echo.id, icmp_header.un.echo.sequence);
+		ping.send_icmp_header.checksum = 0;
+		ping.send_icmp_header.checksum = icmp_checksum(&ping.send_icmp_header);
 		send_time = get_time_in_ms();
-		if (send(socket_fd, &icmp_header, sizeof(icmp_header), 0) == -1)
+		if (send(ping.socket_fd, &ping.send_icmp_header, sizeof(ping.send_icmp_header), 0) == -1)
 		{
 			perror("send");
 			return (1);
 		}
 		nb_packets_sent++;
-		char receive_buffer[1024];
-		len_received_ip_packet = recv(socket_fd, receive_buffer, sizeof(receive_buffer), 0);
+		len_received_ip_packet = recv(ping.socket_fd, ping.receive_buffer, sizeof(ping.receive_buffer), 0);
 		if (len_received_ip_packet == -1)
 		{
 			perror("recv");
@@ -145,19 +126,14 @@ int	main(int argc, char **argv)
 		}
 		nb_packets_received++;
 		receive_time = get_time_in_ms();
-		struct iphdr *ip_header = (struct iphdr *)receive_buffer;
-		int ip_header_len = ip_header->ihl * 4;
-
-		// ICMP header starts after IP header
-		struct icmphdr *received_icmp_packet = (struct icmphdr *)(receive_buffer + ip_header_len);
+		extarct_package(&ping, ping.receive_buffer, len_received_ip_packet);
 		printf("%d bytes from %s (%s): icmp_seq=%d ttl=%d time=%.1f ms\n",
-			len_received_ip_packet, argv[1], inet_ntoa(*(struct in_addr *)&ip_header->saddr), received_icmp_packet->un.echo.sequence, ip_header->ttl, receive_time - send_time);
-		icmp_header.un.echo.sequence++;
+			len_received_ip_packet, argv[1], inet_ntoa(*(struct in_addr *)&ping.received_ip_header->saddr), ping.received_icmp_header->un.echo.sequence, ping.received_ip_header->ttl, receive_time - send_time);
+		ping.send_icmp_header.un.echo.sequence++;
 		sleep(1);
 	}
-	// duplicate package
-	printf("ICMP size: %ld\n", sizeof(icmp_header));
-	send(socket_fd, &icmp_header, sizeof(icmp_header), 0);
-
-	close(socket_fd);
+	printf("\n--- %s ping statistics ---\n", argv[1]);
+	printf("%d packets transmitted, %d received, %d%% packet loss\n",
+		nb_packets_sent, nb_packets_received, (nb_packets_sent - nb_packets_received) * 100 / nb_packets_sent);
+	close(ping.socket_fd);
 }
