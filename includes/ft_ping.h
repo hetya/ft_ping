@@ -14,6 +14,16 @@
 # include <sys/time.h>
 # include <signal.h>
 # include <stdbool.h>
+# include <errno.h>
+
+# define DEFAULT_ICMP_DATA_SIZE 56
+
+typedef struct s_icmp_package
+{
+    struct icmphdr icmp_header;
+    struct timeval timestamp;
+    char data[DEFAULT_ICMP_DATA_SIZE-sizeof(struct timeval)];
+} t_icmp_package;
 
 typedef struct s_ping
 {
@@ -32,5 +42,6 @@ typedef struct s_ping
 uint16_t	icmp_checksum(struct icmphdr *icmp);
 int create_icmp_package(t_ping *ping);
 int extarct_package(t_ping *ping, char *received_buffer, int len_received_ip_packet);
+void sleep_remaining_time(long start_time, long end_time);
 
 #endif

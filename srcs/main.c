@@ -12,7 +12,7 @@
 
 #include "ft_ping.h"
 
-bool g_exit = 0;
+t_ping *g_ping = 0;
 
 int	create_socket_and_connect(t_ping *ping)
 {
@@ -43,6 +43,13 @@ int	create_socket_and_connect(t_ping *ping)
 			address_list = address_list->ai_next;
 			continue ;
 		}
+		if (setsockopt(ping->socket_fd, SOL_SOCKET, SO_RCVTIMEO, &(struct timeval){1, 0}, sizeof(struct timeval)) == -1)
+		{
+			perror("setsockopt");
+			close(ping->socket_fd);
+			address_list = address_list->ai_next;
+			continue ;
+		}
 		if (connect(ping->socket_fd, address_list->ai_addr, address_list->ai_addrlen)
 			== -1)
 		{
@@ -68,7 +75,14 @@ void	handle_exit(int sig)
 {
 	if (sig == SIGINT)
 	{
-		g_exit = 1;
+		if(g_ping)
+		{
+			printf("\n--- %s ping statistics ---\n", g_ping->dest_hostname);
+			printf("%d packets transmitted, %d received, %d%% packet loss\n",
+				g_ping->nb_packets_send, g_ping->nb_packets_received, (g_ping->nb_packets_send - g_ping->nb_packets_received) * 100 / g_ping->nb_packets_send);
+			close(g_ping->socket_fd);
+			exit(0);
+		}
 	}
 }
 
@@ -93,19 +107,18 @@ int	main(int argc, char **argv)
 	}
 	signal(SIGINT, handle_exit);
 	memset(&ping, 0, sizeof(ping));
+	g_ping = &ping;
 	ping.socket_fd = -1;
 	ping.dest_hostname = argv[1];
 	create_socket_and_connect(&ping);
 	create_icmp_package(&ping);
-	printf("PING %s (%s).\n", ping.dest_hostname, ping.dest_ip);
-	printf("sizeof(ping.send_icmp_header) = %ld\n", sizeof(ping.send_icmp_header) + sizeof(struct iphdr));
-	printf("sizeof = %ld\n", sizeof(ping.send_icmp_header)+ sizeof(tv));
+	printf("PING %s (%s) %d(%ld) bytes of data.\n", ping.dest_hostname, ping.dest_ip, DEFAULT_ICMP_DATA_SIZE, DEFAULT_ICMP_DATA_SIZE + sizeof(struct iphdr) + sizeof(struct icmphdr));
 	// data + size buf
-	// check ip checksum + duplicate package
-	// queue for recv?
+	// check ip checksum
 	// check for mal formed or duplicate package
-	while(!g_exit)
+	while(1)
 	{
+		ping.send_icmp_header.un.echo.sequence++;
 		// recreate the checksum since the sequence number has changed
 		gettimeofday(&tv, NULL);
 		ping.send_icmp_header.checksum = 0;
@@ -121,6 +134,11 @@ int	main(int argc, char **argv)
 		len_received_ip_packet = recv(ping.socket_fd, ping.received_buffer, sizeof(ping.received_buffer), 0);
 		if (len_received_ip_packet == -1)
 		{
+			if (errno == EAGAIN || errno == EWOULDBLOCK)
+			{
+				printf("Request timeout for icmp_seq %d\n", ping.send_icmp_header.un.echo.sequence);
+				continue ;
+			}
 			perror("recv");
 			close(ping.socket_fd);
 			return (1);
@@ -137,11 +155,6 @@ int	main(int argc, char **argv)
 
 		printf(": icmp_seq=%d ttl=%d time=%.1f ms\n",
 			ping.received_icmp_header->un.echo.sequence, ping.received_ip_header->ttl, receive_time - send_time);
-		ping.send_icmp_header.un.echo.sequence++;
-		sleep(1);
+		sleep_remaining_time(send_time, receive_time);
 	}
-	printf("\n--- %s ping statistics ---\n", argv[1]);
-	printf("%d packets transmitted, %d received, %d%% packet loss\n",
-		ping.nb_packets_send, ping.nb_packets_received, (ping.nb_packets_send - ping.nb_packets_received) * 100 / ping.nb_packets_send);
-	close(ping.socket_fd);
 }
