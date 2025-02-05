@@ -113,18 +113,19 @@ int	main(int argc, char **argv)
 	create_socket_and_connect(&ping);
 	create_icmp_package(&ping);
 	printf("PING %s (%s) %d(%ld) bytes of data.\n", ping.dest_hostname, ping.dest_ip, DEFAULT_ICMP_DATA_SIZE, DEFAULT_ICMP_DATA_SIZE + sizeof(struct iphdr) + sizeof(struct icmphdr));
-	// data + size buf
 	// check ip checksum
 	// check for mal formed or duplicate package
+	// bonus ttl + -s
 	while(1)
 	{
-		ping.send_icmp_header.un.echo.sequence++;
+		ping.send_icmp_package.icmp_header.un.echo.sequence++;
 		// recreate the checksum since the sequence number has changed
 		gettimeofday(&tv, NULL);
-		ping.send_icmp_header.checksum = 0;
-		ping.send_icmp_header.checksum = icmp_checksum(&ping.send_icmp_header);
+		ping.send_icmp_package.timestamp = tv;
+		ping.send_icmp_package.icmp_header.checksum = 0;
+		ping.send_icmp_package.icmp_header.checksum = icmp_checksum(&ping.send_icmp_package, sizeof(ping.send_icmp_package));
 		send_time = tv.tv_sec * 1000.0 + tv.tv_usec / 1000.0;
-		if (send(ping.socket_fd, &ping.send_icmp_header, sizeof(ping.send_icmp_header), 0) == -1)
+		if (send(ping.socket_fd, &ping.send_icmp_package, sizeof(ping.send_icmp_package), 0) == -1)
 		{
 			perror("send");
 			close(ping.socket_fd);
@@ -136,7 +137,7 @@ int	main(int argc, char **argv)
 		{
 			if (errno == EAGAIN || errno == EWOULDBLOCK)
 			{
-				printf("Request timeout for icmp_seq %d\n", ping.send_icmp_header.un.echo.sequence);
+				printf("Request timeout for icmp_seq %d\n", ping.send_icmp_package.icmp_header.un.echo.sequence);
 				continue ;
 			}
 			perror("recv");
@@ -149,12 +150,11 @@ int	main(int argc, char **argv)
 		{
 			continue ;
 		}
-		printf("%d bytes from %s", len_received_ip_packet, argv[1]); // todo change the size
+		printf("%d bytes from %s", ntohs(ping.received_ip_header->tot_len) - (ping.received_ip_header->ihl * 4), argv[1]);
 		if (strcmp(ping.dest_hostname, ping.dest_ip))
 			printf(" (%s)", inet_ntoa(*(struct in_addr *)&ping.received_ip_header->saddr));
-
 		printf(": icmp_seq=%d ttl=%d time=%.1f ms\n",
-			ping.received_icmp_header->un.echo.sequence, ping.received_ip_header->ttl, receive_time - send_time);
+			ping.received_icmp_package.icmp_header.un.echo.sequence, ping.received_ip_header->ttl, receive_time - send_time);
 		sleep_remaining_time(send_time, receive_time);
 	}
 }

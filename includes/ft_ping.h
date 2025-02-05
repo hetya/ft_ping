@@ -17,6 +17,7 @@
 # include <errno.h>
 
 # define DEFAULT_ICMP_DATA_SIZE 56
+# define ICMP_HEADER_SIZE sizeof(struct icmphdr)
 
 typedef struct s_icmp_package
 {
@@ -32,15 +33,15 @@ typedef struct s_ping
     int socket_fd;
     // char *received_buffer;
     char received_buffer[1024];
-    struct icmphdr send_icmp_header;
+    t_icmp_package send_icmp_package;
     struct iphdr *received_ip_header;
-    struct icmphdr *received_icmp_header;
+    t_icmp_package received_icmp_package;
     int nb_packets_send;
     int nb_packets_received;
 } t_ping;
 
-uint16_t	icmp_checksum(struct icmphdr *icmp);
-int create_icmp_package(t_ping *ping);
+uint16_t	icmp_checksum(void *icmp, int len);
+void create_icmp_package(t_ping *ping);
 int extarct_package(t_ping *ping, char *received_buffer, int len_received_ip_packet);
 void sleep_remaining_time(long start_time, long end_time);
 
