@@ -155,15 +155,7 @@ int	main(int argc, char **argv)
 		}
 		gettimeofday(&tv, NULL);
 		receive_time = tv.tv_sec * 1000.0 + tv.tv_usec / 1000.0;
-		if (extarct_package(ping, ping->received_buffer, len_received_ip_packet))
-		{
-			continue ;
-		}
-		printf("%d bytes from %s", ntohs(ping->received_ip_header->tot_len) - (ping->received_ip_header->ihl * 4), argv[1]);
-		if (strcmp(ping->dest_hostname, ping->dest_ip))
-			printf(" (%s)", inet_ntoa(*(struct in_addr *)&ping->received_ip_header->saddr));
-		printf(": icmp_seq=%d ttl=%d time=%.1f ms\n",
-			ping->received_icmp_package.icmp_header.un.echo.sequence, ping->received_ip_header->ttl, receive_time - send_time);
+		extarct_package(ping, ping->received_buffer, len_received_ip_packet, receive_time - send_time);
 		sleep_remaining_time(send_time, receive_time);
 	}
 }

@@ -26,9 +26,10 @@ void create_icmp_package(t_ping *ping)
 	ping->send_icmp_package.icmp_header.un.echo.sequence = 0;
 }
 
-int extarct_package(t_ping *ping, char *received_buffer, int len_received_ip_packet)
+int extarct_package(t_ping *ping, char *received_buffer, int len_received_ip_packet, double request_time)
 {
 	uint16_t received_checksum;
+	int status = 0;
 
     struct iphdr *ip_header = (struct iphdr *)received_buffer;
 	int ip_header_len = ip_header->ihl * 4;
@@ -48,11 +49,8 @@ int extarct_package(t_ping *ping, char *received_buffer, int len_received_ip_pac
 	received_checksum = icmp_header->checksum;
 	icmp_header->checksum = 0;
 	if (icmp_checksum(icmp_header, ntohs(ip_header->tot_len) - (ip_header->ihl * 4)) != received_checksum)
-		return (1);
-	ping->received_ip_header = ip_header;
-	ping->received_icmp_package.icmp_header = *icmp_header;
-	ping->received_icmp_package.timestamp = *(struct timeval *)(icmp_header + sizeof(struct icmphdr));
-	memcpy(ping->received_icmp_package.data, (char *)(icmp_header + sizeof(struct icmphdr) + sizeof(struct timeval)), ntohs(ip_header->tot_len) - (ip_header->ihl * 4) - ICMP_HEADER_SIZE - sizeof(struct timeval));
+		status = 1;
+	print_packet_info(ping, ntohs(ip_header->tot_len) - (ip_header->ihl * 4), icmp_header->un.echo.sequence, ip_header->ttl, request_time, status);
 	ping->nb_packets_received++;
-	return (0);
+	return (status);
 }

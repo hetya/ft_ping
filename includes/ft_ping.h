@@ -34,16 +34,15 @@ typedef struct s_ping
     // char *received_buffer;
     char received_buffer[1024];
     t_icmp_package send_icmp_package;
-    struct iphdr *received_ip_header;
-    t_icmp_package received_icmp_package;
     int nb_packets_send;
     int nb_packets_received;
 } t_ping;
 
 uint16_t	icmp_checksum(void *icmp, int len);
 void create_icmp_package(t_ping *ping);
-int extarct_package(t_ping *ping, char *received_buffer, int len_received_ip_packet);
+int extarct_package(t_ping *ping, char *received_buffer, int len_received_ip_packet, double request_time);
 void sleep_remaining_time(long start_time, long end_time);
 void clean_ping(t_ping	*ping);
+void print_packet_info(t_ping *ping, int bytes_received, int sequence, int ttl, double request_time, int status);
 
 #endif

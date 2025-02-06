@@ -29,3 +29,17 @@ void clean_ping(t_ping	*ping)
         ping = NULL;
     }
 }
+
+void print_packet_info(t_ping *ping, int bytes_received, int sequence, int ttl, double request_time, int status)
+{
+    printf("%d bytes from %s", bytes_received, ping->dest_hostname);
+    if (strcmp(ping->dest_hostname, ping->dest_ip))
+        printf(" (%s)", ping->dest_ip);
+    printf(": icmp_seq=%d ttl=%d time=%.1f ms",
+        sequence, ttl, request_time);
+    if (status == 1)
+        printf(" (malformed packet)");
+    else if (status == 2)
+        printf(" (duplicate packet)");
+    printf("\n");
+}
