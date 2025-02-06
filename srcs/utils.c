@@ -18,3 +18,14 @@ void sleep_remaining_time(long start_time, long end_time)
         perror("nanosleep failed");
     }
 }
+
+void clean_ping(t_ping	*ping)
+{
+    if (ping)
+    {
+        if (ping->socket_fd != -1)
+            close(ping->socket_fd);
+        free(ping);
+        ping = NULL;
+    }
+}

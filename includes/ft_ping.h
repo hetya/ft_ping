@@ -44,5 +44,6 @@ uint16_t	icmp_checksum(void *icmp, int len);
 void create_icmp_package(t_ping *ping);
 int extarct_package(t_ping *ping, char *received_buffer, int len_received_ip_packet);
 void sleep_remaining_time(long start_time, long end_time);
+void clean_ping(t_ping	*ping);
 
 #endif
