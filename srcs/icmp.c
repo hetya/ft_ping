@@ -26,6 +26,34 @@ void create_icmp_package(t_ping *ping)
 	ping->send_icmp_package.icmp_header.un.echo.sequence = 0;
 }
 
+int check_and_add_sequence(t_ping *ping, int sequence)
+{
+	t_sequence *tmp;
+	t_sequence *new_sequence;
+
+	tmp = ping->received_sequence;
+	while (tmp && tmp->next)
+	{
+		if (tmp->sequence == sequence)
+			return (1);
+		tmp = tmp->next;
+	}
+	new_sequence = malloc(sizeof(t_sequence));
+	if (!new_sequence)
+	{
+		perror("malloc");
+		clean_ping(ping);
+		exit(1);
+	}
+	new_sequence->sequence = sequence;
+	new_sequence->next = NULL;
+	if (!ping->received_sequence)
+		ping->received_sequence = new_sequence;
+	else
+		tmp->next = new_sequence;
+	return (0);
+}
+
 int extarct_package(t_ping *ping, char *received_buffer, int len_received_ip_packet, double request_time)
 {
 	uint16_t received_checksum;
@@ -50,6 +78,8 @@ int extarct_package(t_ping *ping, char *received_buffer, int len_received_ip_pac
 	icmp_header->checksum = 0;
 	if (icmp_checksum(icmp_header, ntohs(ip_header->tot_len) - (ip_header->ihl * 4)) != received_checksum)
 		status = 1;
+	if (check_and_add_sequence(ping, icmp_header->un.echo.sequence) == 1)
+		status = 2;
 	print_packet_info(ping, ntohs(ip_header->tot_len) - (ip_header->ihl * 4), icmp_header->un.echo.sequence, ip_header->ttl, request_time, status);
 	ping->nb_packets_received++;
 	return (status);

@@ -19,6 +19,12 @@
 # define DEFAULT_ICMP_DATA_SIZE 56
 # define ICMP_HEADER_SIZE sizeof(struct icmphdr)
 
+typedef struct s_sequence
+{
+    int sequence;
+    struct s_sequence *next;
+} t_sequence;
+
 typedef struct s_icmp_package
 {
     struct icmphdr icmp_header;
@@ -36,6 +42,7 @@ typedef struct s_ping
     t_icmp_package send_icmp_package;
     int nb_packets_send;
     int nb_packets_received;
+    t_sequence *received_sequence;
 } t_ping;
 
 uint16_t	icmp_checksum(void *icmp, int len);

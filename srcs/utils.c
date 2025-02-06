@@ -21,10 +21,22 @@ void sleep_remaining_time(long start_time, long end_time)
 
 void clean_ping(t_ping	*ping)
 {
+    t_sequence *next;
+
     if (ping)
     {
         if (ping->socket_fd != -1)
             close(ping->socket_fd);
+        if (ping->received_sequence)
+        {
+            t_sequence *tmp = ping->received_sequence;
+            while (tmp)
+            {
+                next = tmp->next;
+                free(tmp);
+                tmp = next;
+            }
+        }
         free(ping);
         ping = NULL;
     }

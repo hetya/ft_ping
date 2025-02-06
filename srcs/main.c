@@ -111,8 +111,8 @@ int	main(int argc, char **argv)
 		perror("malloc");
 		return (1);
 	}
-	g_ping = ping;
 	memset(ping, 0, sizeof(t_ping));
+	g_ping = ping;
 	ping->socket_fd = -1;
 	ping->dest_hostname = argv[1];
 	if (create_socket_and_connect(ping) == -1)
@@ -122,8 +122,8 @@ int	main(int argc, char **argv)
 	}
 	create_icmp_package(ping);
 	printf("PING %s (%s) %d(%ld) bytes of data.\n", ping->dest_hostname, ping->dest_ip, DEFAULT_ICMP_DATA_SIZE, DEFAULT_ICMP_DATA_SIZE + sizeof(struct iphdr) + sizeof(struct icmphdr));
+	// buffer
 	// check ip checksum
-	// check for mal formed or duplicate package
 	// bonus ttl + -s
 	for(int i = 0; i < UINT16_MAX; i++)
 	{
