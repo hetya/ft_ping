@@ -24,6 +24,7 @@ typedef struct s_sequence
 {
     int sequence;
     struct s_sequence *next;
+    double request_time;
 } t_sequence;
 
 typedef struct s_icmp_package
@@ -51,5 +52,7 @@ int extarct_package(t_ping *ping, char *received_buffer, int len_received_ip_pac
 void sleep_remaining_time(long start_time, long end_time);
 void clean_ping(t_ping	*ping);
 void print_packet_info(int sequence, int ttl, double request_time, int status);
+void set_socket_options(int socket_fd);
+void print_statistics(t_ping *ping);
 
 #endif

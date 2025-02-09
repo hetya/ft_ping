@@ -26,7 +26,7 @@ void create_icmp_package(t_ping *ping)
 	ping->send_icmp_package.icmp_header.un.echo.sequence = 0;
 }
 
-int check_and_add_sequence(t_ping *ping, int sequence)
+int check_and_add_sequence(t_ping *ping, int sequence, double request_time)
 {
 	t_sequence *list;
 	t_sequence *new_sequence;
@@ -46,6 +46,7 @@ int check_and_add_sequence(t_ping *ping, int sequence)
 		exit(1);
 	}
 	new_sequence->sequence = sequence;
+	new_sequence->request_time = request_time;
 	new_sequence->next = NULL;
 	if (!ping->received_sequence)
 		ping->received_sequence = new_sequence;
@@ -109,7 +110,7 @@ int extarct_package(t_ping *ping, char *received_buffer, int len_received_ip_pac
 		return (1);
 	if (icmp_header->un.echo.id != ping->send_icmp_package.icmp_header.un.echo.id)
 		return (1);
-	if (check_and_add_sequence(ping, icmp_header->un.echo.sequence) == 1)
+	if (check_and_add_sequence(ping, icmp_header->un.echo.sequence, request_time) == 1)
 		status = 2;
 	// todo : patch this case
 	// if (icmp_header->un.echo.sequence != ping->send_icmp_package.icmp_header.un.echo.sequence)
