@@ -113,27 +113,41 @@ int extract_package(t_ping *ping, char *received_buffer, int len_received_ip_pac
 
 	// ICMP header starts after IP header
 	struct icmphdr *icmp_header = (struct icmphdr *)(received_buffer + ip_header_len);
-	print_ip_packet_resume(ping, ip_header);
-	if (check_icmp_type(icmp_header->type) == 1)
-		return (1);
-	if (icmp_header->un.echo.id != ping->send_icmp_package.icmp_header.un.echo.id)
-	{
-		printf("Bad id\n");
-		return (1);
-	}
-	if (check_duplicate(ping, icmp_header->un.echo.sequence, icmp_header->checksum) == 1)
-		status = 2;
-	else if (icmp_header->un.echo.sequence != ping->send_icmp_package.icmp_header.un.echo.sequence)
-	{
-		printf("Bad sequence receive\n");
-		return (1);
-	}
+	if (ping->verbose != 0)
+		print_ip_packet_resume(ping, ip_header);
 	tmp_checksum = icmp_header->checksum;
 	icmp_header->checksum = 0;
-	if (icmp_checksum(icmp_header, ntohs(ip_header->tot_len) - (ip_header->ihl * 4)) != tmp_checksum)
+	if (check_icmp_type(icmp_header->type) == 1)
 		status = 1;
-	save_sequence(ping, icmp_header->un.echo.sequence, request_time, tmp_checksum);
-	print_packet_info(icmp_header->un.echo.sequence, ip_header->ttl, request_time, status);
-	ping->nb_packets_received++;
+	else if (icmp_header->un.echo.id != ping->send_icmp_package.icmp_header.un.echo.id)
+	{
+		if (ping->verbose == 0)
+			print_ip_packet_resume(ping, ip_header);
+		printf("Bad id\n");
+		status = 2;
+	}
+	else if (check_duplicate(ping, icmp_header->un.echo.sequence, tmp_checksum) == 1)
+		status = 3;
+	else if (icmp_header->un.echo.sequence != ping->send_icmp_package.icmp_header.un.echo.sequence)
+	{
+		if (ping->verbose == 0)
+			print_ip_packet_resume(ping, ip_header);
+		printf("Bad sequence receive\n");
+		status = 4;
+	}
+	else if (icmp_checksum(icmp_header, ntohs(ip_header->tot_len) - (ip_header->ihl * 4)) != tmp_checksum)
+		status = 5;
+	if (ping->verbose != 0)
+		print_packet_info(icmp_header->un.echo.sequence, ip_header->ttl, request_time, status);
+	if (status == 0)
+	{
+		ping->nb_packets_received++;
+		save_sequence(ping, icmp_header->un.echo.sequence, request_time, tmp_checksum);
+	}
+	else
+	{
+		if (ping->verbose == 2)
+		print_ip_and_icmp_details(ip_header, icmp_header);
+	}
 	return (status);
 }

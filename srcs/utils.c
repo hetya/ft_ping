@@ -48,17 +48,18 @@ void print_ip_packet_resume(t_ping *ping, struct iphdr *ip_header)
 {
     printf("%d bytes from %s", ntohs(ip_header->tot_len) - (ip_header->ihl * 4), ping->dest_hostname);
 	if (strcmp(ping->dest_hostname, ping->dest_ip))
-		printf(" (%s)", ping->dest_ip);
+		printf(" (%s)", inet_ntoa((struct in_addr){ip_header->saddr}));
 	printf(": ");
 }
 
 void print_packet_info(int sequence, int ttl, double request_time, int status)
 {
+    
     printf("icmp_seq=%d ttl=%d time=%.1f ms",
         sequence, ttl, request_time);
-    if (status == 1)
+    if (status == 5)
         printf(" (malformed packet)");
-    else if (status == 2)
+    else if (status == 3)
         printf(" (duplicate packet)");
     printf("\n");
 }
@@ -91,9 +92,11 @@ void set_socket_options(int socket_fd)
     (1<<ICMP_REDIRECT)|
     (1<<ICMP_ECHOREPLY));
     if (setsockopt(socket_fd, SOL_RAW, ICMP_FILTER, (char*)&data, sizeof(data)) == -1)
-    perror("WARNING: setsockopt(ICMP_FILTER)");
+        perror("WARNING: setsockopt(ICMP_FILTER)");
     if (setsockopt(socket_fd, SOL_SOCKET, SO_RCVTIMEO, &(struct timeval){1, 0}, sizeof(struct timeval)) == -1)
-    perror("WARNING: setsockopt(SO_RCVTIMEO)");
+        perror("WARNING: setsockopt(SO_RCVTIMEO)");
+    if (setsockopt(socket_fd, SOL_SOCKET, SO_BROADCAST, &(int){1}, sizeof(int)) == -1)
+        perror("WARNING: setsockopt(SO_BROADCAST)");
 }
 
 double ft_sqrt(double num) {
@@ -161,6 +164,7 @@ int parse_args(t_ping *ping, int argc, char **argv)
 
     ping->verbose = 1;
     ping->iterations = UINT16_MAX;
+    ping->interval_in_s = 1;
     while ((opt = getopt(argc, argv, "vc:qi:")) != -1)
     {
         switch (opt) {

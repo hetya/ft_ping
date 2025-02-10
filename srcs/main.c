@@ -6,7 +6,7 @@
 /*   By: unknown <unknown>                          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/01/28 16:47:03 by unknown           #+#    #+#             */
-/*   Updated: 2025/02/10 19:56:26 by unknown          ###   ########.fr       */
+/*   Updated: 2025/02/10 20:42:58 by unknown          ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -121,6 +121,8 @@ int	main(int argc, char **argv)
 	printf("\n");
 	// bonus ttl + -s + c + q + i + w
 	// -v + -? don't launch ping
+	// patch broadcast
+	// test -v
 	for(int i = 0; i < ping->iterations; i++)
 	{
 		ping->send_icmp_package.icmp_header.un.echo.sequence++;
