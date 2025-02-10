@@ -3,7 +3,7 @@
 #include <stdio.h>
 #include <time.h>
 
-void sleep_remaining_time(long start_time, long end_time)
+void sleep_remaining_time(t_ping *ping, long start_time, long end_time)
 {
     struct timespec ts;
 
@@ -17,6 +17,8 @@ void sleep_remaining_time(long start_time, long end_time)
     if (nanosleep(&ts, NULL) == -1) {
         perror("nanosleep failed");
     }
+    if (ping->interval_in_s > 1)
+        sleep(ping->interval_in_s - 1);
 }
 
 void clean_ping(t_ping	*ping)
@@ -42,6 +44,14 @@ void clean_ping(t_ping	*ping)
     }
 }
 
+void print_ip_packet_resume(t_ping *ping, struct iphdr *ip_header)
+{
+    printf("%d bytes from %s", ntohs(ip_header->tot_len) - (ip_header->ihl * 4), ping->dest_hostname);
+	if (strcmp(ping->dest_hostname, ping->dest_ip))
+		printf(" (%s)", ping->dest_ip);
+	printf(": ");
+}
+
 void print_packet_info(int sequence, int ttl, double request_time, int status)
 {
     printf("icmp_seq=%d ttl=%d time=%.1f ms",
@@ -51,6 +61,22 @@ void print_packet_info(int sequence, int ttl, double request_time, int status)
     else if (status == 2)
         printf(" (duplicate packet)");
     printf("\n");
+}
+
+void print_ip_and_icmp_details(struct iphdr *ip_header, struct icmphdr *icmp_header)
+{
+    printf("IP Hdr Dump:\n");
+    for (int i = 0; i < 20; i++)
+    {
+        printf("%02x", ((unsigned char *)ip_header)[i]);
+        if (i % 2)
+            printf(" ");
+    }
+    printf("\n");
+    printf("Vr %d HL %d TOS %02x Len %04x ID %04x Flg %04x off %04x TTL %02x Pro %02x cks %04x Src %s Dst %s\n",
+        ip_header->version, ip_header->ihl, ip_header->tos, ntohs(ip_header->tot_len), ntohs(ip_header->id), ntohs(ip_header->frag_off), ip_header->ttl, ip_header->protocol, ntohs(ip_header->check), inet_ntoa((struct in_addr){ip_header->saddr}), inet_ntoa((struct in_addr){ip_header->daddr}));
+    printf("ICMP: type %d, code %d, size %d, id 0x%x, seq 0x%x\n",
+        icmp_header->type, icmp_header->code, ntohs(ip_header->tot_len) - (ip_header->ihl * 4), icmp_header->un.echo.id, icmp_header->un.echo.sequence);
 }
 
 void set_socket_options(int socket_fd)
@@ -121,4 +147,60 @@ void print_statistics(t_ping *ping)
         printf("round-trip min/avg/max/stddev = %.3f/%.3f/%.3f/%.3f ms\n",
         min_rtt, mean_rtt, max_rtt, stddev_rtt);
     }
+}
+
+void display_help(char *name)
+{
+    fprintf(stderr, "Usage: %s [-v] [-c count] [-i interval] [-q] destination\n", name);
+}
+
+int parse_args(t_ping *ping, int argc, char **argv)
+{
+    int opt;
+    char *error_ptr;
+
+    ping->verbose = 1;
+    ping->iterations = UINT16_MAX;
+    while ((opt = getopt(argc, argv, "vc:qi:")) != -1)
+    {
+        switch (opt) {
+            case 'v': // verbose
+                ping->verbose = 2;
+                break;
+            case 'q': // quiet
+                ping->verbose = 0;
+                break;
+            case 'c': // number of packets to send
+                long count = strtol(optarg, &error_ptr, 10);
+                if (*error_ptr != '\0' || count < 0 || count > UINT16_MAX)
+                {
+                    fprintf(stderr, "Invalid packet count: %s\n", optarg);
+                    return -1;
+                }
+                if (count == 0)
+                    break;
+                ping->iterations = count;
+                break;
+            case 'i': // interval between packets
+                long interval = strtol(optarg, &error_ptr, 10);
+                if (*error_ptr != '\0' || interval <= 0 || interval > UINT64_MAX)
+                {
+                    fprintf(stderr, "Invalid interval: %s\n", optarg);
+                    return -1;
+                }
+                ping->interval_in_s = interval;
+                break;
+            default:
+                display_help(argv[0]);
+                return (-1);
+        }
+    }
+    if (optind >= argc)
+    {
+        fprintf(stderr, "ping: missing host operand\n");
+        fprintf(stderr, "Usage: %s [-v] [-c count] [-i interval] [-q] destination\n", argv[0]);
+        return (-1);
+    }
+    ping->dest_hostname = argv[optind];
+    return (0);
 }

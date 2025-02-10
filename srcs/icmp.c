@@ -93,7 +93,7 @@ int check_icmp_type(int type)
 	}
 }
 
-int extarct_package(t_ping *ping, char *received_buffer, int len_received_ip_packet, double request_time)
+int extract_package(t_ping *ping, char *received_buffer, int len_received_ip_packet, double request_time)
 {
 	uint16_t tmp_checksum;
 	int status = 0;
@@ -113,11 +113,7 @@ int extarct_package(t_ping *ping, char *received_buffer, int len_received_ip_pac
 
 	// ICMP header starts after IP header
 	struct icmphdr *icmp_header = (struct icmphdr *)(received_buffer + ip_header_len);
-	printf("%d bytes from %s", ntohs(ip_header->tot_len) - (ip_header->ihl * 4),inet_ntoa((struct in_addr){ip_header->saddr}));
-	if (strcmp(ping->dest_hostname, ping->dest_ip))
-		printf(" (%s)", ping->dest_ip);
-	printf(": ");
-
+	print_ip_packet_resume(ping, ip_header);
 	if (check_icmp_type(icmp_header->type) == 1)
 		return (1);
 	if (icmp_header->un.echo.id != ping->send_icmp_package.icmp_header.un.echo.id)
