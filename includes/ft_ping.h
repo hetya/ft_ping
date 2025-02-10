@@ -23,8 +23,9 @@
 typedef struct s_sequence
 {
     int sequence;
-    struct s_sequence *next;
     double request_time;
+    uint16_t checksum;
+    struct s_sequence *next;
 } t_sequence;
 
 typedef struct s_icmp_package

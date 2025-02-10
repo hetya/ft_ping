@@ -75,7 +75,7 @@ double ft_sqrt(double num) {
     double epsilon = 1e-3; // Precision level
 
     if (num < 0) {
-        return (NAN);
+        return (-1);
     }    
     while ((guess * guess - num) > epsilon || (num - guess * guess) > epsilon) {
         guess = (guess + num / guess) / 2.0;
@@ -107,6 +107,8 @@ void print_statistics(t_ping *ping)
                 max_rtt = tmp->request_time;
             sum_rtt += tmp->request_time;
         }
+        if (min_rtt < 0)
+            min_rtt = 0;
         mean_rtt = sum_rtt / (double)ping->nb_packets_received;
         stddev_rtt = 0;
         for (t_sequence *tmp = ping->received_sequence; tmp; tmp = tmp->next)
@@ -114,9 +116,9 @@ void print_statistics(t_ping *ping)
             stddev_rtt += (tmp->request_time - mean_rtt) * (tmp->request_time - mean_rtt);
         }
         stddev_rtt = ft_sqrt(stddev_rtt / (double)ping->nb_packets_received);
-        if (min_rtt < 0)
-            min_rtt = 0;
-            printf("round-trip min/avg/max/stddev = %.3f/%.3f/%.3f/%.3f ms\n",
-            min_rtt, mean_rtt, max_rtt, stddev_rtt);
+        if (stddev_rtt < 0)
+            fprintf(stderr, "Error while calculating round-trip");
+        printf("round-trip min/avg/max/stddev = %.3f/%.3f/%.3f/%.3f ms\n",
+        min_rtt, mean_rtt, max_rtt, stddev_rtt);
     }
 }

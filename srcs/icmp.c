@@ -26,7 +26,7 @@ void create_icmp_package(t_ping *ping)
 	ping->send_icmp_package.icmp_header.un.echo.sequence = 0;
 }
 
-int check_and_add_sequence(t_ping *ping, int sequence, double request_time)
+int check_duplicate(t_ping *ping, int sequence, uint16_t checksum)
 {
 	t_sequence *list;
 	t_sequence *new_sequence;
@@ -34,10 +34,21 @@ int check_and_add_sequence(t_ping *ping, int sequence, double request_time)
 	list = ping->received_sequence;
 	while (list && list->next)
 	{
-		if (list->sequence == sequence)
+		if (list->sequence == sequence && list->checksum == checksum)
 			return (1);
 		list = list->next;
 	}
+	return (0);
+}
+
+int save_sequence(t_ping *ping, int sequence, double request_time, uint16_t checksum)
+{
+	t_sequence *list;
+	t_sequence *new_sequence;
+
+	list = ping->received_sequence;
+	while (list && list->next)
+		list = list->next;
 	new_sequence = malloc(sizeof(t_sequence));
 	if (!new_sequence)
 	{
@@ -47,6 +58,7 @@ int check_and_add_sequence(t_ping *ping, int sequence, double request_time)
 	}
 	new_sequence->sequence = sequence;
 	new_sequence->request_time = request_time;
+	new_sequence->checksum = checksum;
 	new_sequence->next = NULL;
 	if (!ping->received_sequence)
 		ping->received_sequence = new_sequence;
@@ -101,7 +113,7 @@ int extarct_package(t_ping *ping, char *received_buffer, int len_received_ip_pac
 
 	// ICMP header starts after IP header
 	struct icmphdr *icmp_header = (struct icmphdr *)(received_buffer + ip_header_len);
-	printf("%d bytes from %s", ntohs(ip_header->tot_len) - (ip_header->ihl * 4), ping->dest_hostname);
+	printf("%d bytes from %s", ntohs(ip_header->tot_len) - (ip_header->ihl * 4),inet_ntoa((struct in_addr){ip_header->saddr}));
 	if (strcmp(ping->dest_hostname, ping->dest_ip))
 		printf(" (%s)", ping->dest_ip);
 	printf(": ");
@@ -109,16 +121,22 @@ int extarct_package(t_ping *ping, char *received_buffer, int len_received_ip_pac
 	if (check_icmp_type(icmp_header->type) == 1)
 		return (1);
 	if (icmp_header->un.echo.id != ping->send_icmp_package.icmp_header.un.echo.id)
+	{
+		printf("Bad id\n");
 		return (1);
-	if (check_and_add_sequence(ping, icmp_header->un.echo.sequence, request_time) == 1)
+	}
+	if (check_duplicate(ping, icmp_header->un.echo.sequence, icmp_header->checksum) == 1)
 		status = 2;
-	// todo : patch this case
-	// if (icmp_header->un.echo.sequence != ping->send_icmp_package.icmp_header.un.echo.sequence)
-	// 	return (1);
+	else if (icmp_header->un.echo.sequence != ping->send_icmp_package.icmp_header.un.echo.sequence)
+	{
+		printf("Bad sequence receive\n");
+		return (1);
+	}
 	tmp_checksum = icmp_header->checksum;
 	icmp_header->checksum = 0;
 	if (icmp_checksum(icmp_header, ntohs(ip_header->tot_len) - (ip_header->ihl * 4)) != tmp_checksum)
 		status = 1;
+	save_sequence(ping, icmp_header->un.echo.sequence, request_time, tmp_checksum);
 	print_packet_info(icmp_header->un.echo.sequence, ip_header->ttl, request_time, status);
 	ping->nb_packets_received++;
 	return (status);
