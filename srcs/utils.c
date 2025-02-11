@@ -72,7 +72,7 @@ void print_ip_and_icmp_details(struct iphdr *ip_header, struct icmphdr *icmp_hea
     }
     printf("\n");
     printf("Vr %d HL %d TOS %02x Len %04x ID %04x Flg %04x off %04x TTL %02x Pro %02x cks %04x Src %s Dst %s\n",
-        ip_header->version, ip_header->ihl, ip_header->tos, ntohs(ip_header->tot_len), ntohs(ip_header->id), ntohs(ip_header->frag_off), ip_header->ttl, ip_header->protocol, ntohs(ip_header->check), inet_ntoa((struct in_addr){ip_header->saddr}), inet_ntoa((struct in_addr){ip_header->daddr}));
+        ip_header->version, ip_header->ihl, ip_header->tos, ntohs(ip_header->tot_len), ntohs(ip_header->id), ntohs(ip_header->frag_off) >> 13, ntohs(ip_header->frag_off) & 0x1FFF, ip_header->ttl, ip_header->protocol, ntohs(ip_header->check), inet_ntoa((struct in_addr){ip_header->saddr}), inet_ntoa((struct in_addr){ip_header->daddr}));
     printf("ICMP: type %d, code %d, size %d, id 0x%x, seq 0x%x\n",
         icmp_header->type, icmp_header->code, ntohs(ip_header->tot_len) - (ip_header->ihl * 4), icmp_header->un.echo.id, icmp_header->un.echo.sequence);
 }
@@ -158,8 +158,9 @@ void display_help(char *name)
 
 int parse_args(t_ping *ping, int argc, char **argv)
 {
-    int opt;
-    char *error_ptr;
+    int     opt;
+    char    *error_ptr;
+    long    option_value;
 
     static struct option long_options[] = {
     {"ttl", required_argument, NULL, 256},
@@ -180,42 +181,42 @@ int parse_args(t_ping *ping, int argc, char **argv)
                 ping->verbose = 0;
                 break;
             case 'c': // number of packets to send
-                long count = strtol(optarg, &error_ptr, 10);
-                if (*error_ptr != '\0' || count < 0 || count > UINT16_MAX)
+               option_value = strtol(optarg, &error_ptr, 10);
+                if (*error_ptr != '\0' || option_value < 0 || option_value > UINT16_MAX)
                 {
                     fprintf(stderr, "Invalid packet count: %s\n", optarg);
                     return -1;
                 }
-                if (count == 0)
+                if (option_value == 0)
                     break;
-                ping->iterations = count;
+                ping->iterations = option_value;
                 break;
             case 'i': // interval between packets
-                long interval = strtol(optarg, &error_ptr, 10);
-                if (*error_ptr != '\0' || interval <= 0 || interval > UINT64_MAX)
+                option_value = strtol(optarg, &error_ptr, 10);
+                if (*error_ptr != '\0' || option_value <= 0 || option_value > UINT64_MAX)
                 {
                     fprintf(stderr, "Invalid interval: %s\n", optarg);
                     return -1;
                 }
-                ping->interval_in_s = interval;
+                ping->interval_in_s = option_value;
                 break;
             case 256: // ttl
-                long ttl = strtol(optarg, &error_ptr, 10);
-                if (*error_ptr != '\0' || ttl <= 0 || ttl > 255)
+                option_value = strtol(optarg, &error_ptr, 10);
+                if (*error_ptr != '\0' || option_value <= 0 || option_value > 255)
                 {
                     fprintf(stderr, "Invalid ttl: %s\n", optarg);
                     return -1;
                 }
-                ping->ttl = ttl;
+                ping->ttl = option_value;
                 break;
             case 'w': // timeout
-                long timeout = strtol(optarg, &error_ptr, 10);
-                if (*error_ptr != '\0' || timeout <= 0 || timeout > UINT64_MAX)
+                option_value = strtol(optarg, &error_ptr, 10);
+                if (*error_ptr != '\0' || option_value <= 0 || option_value > UINT64_MAX)
                 {
                     fprintf(stderr, "Invalid timeout: %s\n", optarg);
                     return -1;
                 }
-                ping->timeout_in_s = timeout;
+                ping->timeout_in_s = option_value;
                 break;
             case '?':
                 display_help(argv[0]);
@@ -229,8 +230,8 @@ int parse_args(t_ping *ping, int argc, char **argv)
     }
     if (optind >= argc)
     {
-        fprintf(stderr, "ping: missing host operand\n");
-        fprintf(stderr, "Try ping '-?' for more information.\n", argv[0]);
+        fprintf(stderr, "ft_ping: missing host operand\n");
+        fprintf(stderr, "Try %s '-?' for more information.\n", argv[0]);
         return (-1);
     }
     ping->dest_hostname = argv[optind];
