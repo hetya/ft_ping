@@ -127,6 +127,8 @@ void print_statistics(t_ping *ping)
         printf("\n--- %s ping statistics ---\n", ping->dest_hostname);
         printf("%d packets transmitted, %d received, %d%% packet loss\n",
             ping->nb_packets_send, ping->nb_packets_received, (ping->nb_packets_send - ping->nb_packets_received) * 100 / ping->nb_packets_send);
+        if(ping->nb_packets_received == 0)
+            return ;
         for (t_sequence *tmp = ping->received_sequence; tmp; tmp = tmp->next)
         {
             if (min_rtt < 0 || tmp->request_time < min_rtt)
