@@ -71,9 +71,10 @@ void print_ip_and_icmp_details(struct iphdr *ip_header, struct icmphdr *icmp_hea
             printf(" ");
     }
     printf("\n");
-    printf("Vr %d HL %d TOS %02x Len %04x ID %04x Flg %04x off %04x TTL %02x Pro %02x cks %04x Src %s Dst %s\n",
+    printf("Vr HL TOS Len  ID  Flg  off  TTL Pro cks  Src          Dst\n");
+    printf("%d  %d  %02x %04x %04x %04x %04x %02x  %02x  %04x %s %s\n",
         ip_header->version, ip_header->ihl, ip_header->tos, ntohs(ip_header->tot_len), ntohs(ip_header->id), ntohs(ip_header->frag_off) >> 13, ntohs(ip_header->frag_off) & 0x1FFF, ip_header->ttl, ip_header->protocol, ntohs(ip_header->check), inet_ntoa((struct in_addr){ip_header->saddr}), inet_ntoa((struct in_addr){ip_header->daddr}));
-    printf("ICMP: type %d, code %d, size %d, id 0x%x, seq 0x%x\n",
+    printf("ICMP: type %d, code %d, size %d, id 0x%04x, seq 0x%04x\n",
         icmp_header->type, icmp_header->code, ntohs(ip_header->tot_len) - (ip_header->ihl * 4), icmp_header->un.echo.id, icmp_header->un.echo.sequence);
 }
 

@@ -42,7 +42,7 @@ typedef struct s_ping
 	char *dest_hostname;
 	char *dest_ip;
     int socket_fd;
-    char received_buffer[sizeof(struct iphdr) + sizeof(struct icmphdr) + DEFAULT_ICMP_DATA_SIZE];
+    char received_buffer[(sizeof(struct iphdr) + sizeof(struct icmphdr) + DEFAULT_ICMP_DATA_SIZE) * 2]; // when error we receive the send packet
     t_icmp_package send_icmp_package;
     int nb_packets_send;
     int nb_packets_received;

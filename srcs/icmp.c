@@ -106,9 +106,8 @@ int extract_package(t_ping *ping, char *received_buffer, int len_received_ip_pac
 	ip_header->check = 0;
 	if (icmp_checksum(received_buffer, len_received_ip_packet) != tmp_checksum)
 		return (1);
+	ip_header->check = tmp_checksum;
     if (ip_header->protocol != IPPROTO_ICMP)
-        return (1);
-    if (ip_header->saddr != inet_addr(ping->dest_ip))
         return (1);
 
 	// ICMP header starts after IP header
@@ -137,7 +136,7 @@ int extract_package(t_ping *ping, char *received_buffer, int len_received_ip_pac
 	}
 	else if (icmp_checksum(icmp_header, ntohs(ip_header->tot_len) - (ip_header->ihl * 4)) != tmp_checksum)
 		status = 5;
-	if (ping->verbose != 0)
+	if (ping->verbose != 0 && status == 0)
 		print_packet_info(icmp_header->un.echo.sequence, ip_header->ttl, request_time, status);
 	if (status == 0)
 	{
@@ -147,7 +146,13 @@ int extract_package(t_ping *ping, char *received_buffer, int len_received_ip_pac
 	else
 	{
 		if (ping->verbose == 2)
-		print_ip_and_icmp_details(ip_header, icmp_header);
+		{
+			// retrieve the failed packet
+			int offset = ip_header->ihl * 4 + sizeof(struct icmphdr);
+			ip_header = (struct iphdr *)(received_buffer + offset);
+			icmp_header = (struct icmphdr *)(received_buffer + offset + ip_header->ihl * 4);
+			print_ip_and_icmp_details(ip_header, icmp_header);
+		}
 	}
 	return (status);
 }
