@@ -169,7 +169,7 @@ int parse_args(t_ping *ping, int argc, char **argv)
     {"ttl", required_argument, NULL, 256},
     {NULL, 0, NULL, 0}
     };
-    ping->verbose = 1;
+    ping->verbose = 0;
     ping->iterations = UINT16_MAX;
     ping->interval_in_s = 1;
     ping->ttl = 64;
@@ -178,10 +178,10 @@ int parse_args(t_ping *ping, int argc, char **argv)
     {
         switch (opt) {
             case 'v': // verbose
-                ping->verbose = 2;
+                ping->verbose |= FLAG_VERBOSE;
                 break;
             case 'q': // quiet
-                ping->verbose = 0;
+                ping->verbose |= FLAG_QUIET;
                 break;
             case 'c': // number of packets to send
                option_value = strtol(optarg, &error_ptr, 10);

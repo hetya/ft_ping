@@ -111,14 +111,9 @@ int	main(int argc, char **argv)
 	socklen_t addr_len = sizeof(reply_addr);
 	create_icmp_package(ping);
 	printf("PING %s (%s): %d data bytes", ping->dest_hostname, ping->dest_ip, DEFAULT_ICMP_DATA_SIZE);
-	if (ping->verbose == 2)
+	if (ping->verbose & FLAG_VERBOSE)
 		printf(", id 0x%x = %d", ping->send_icmp_package.icmp_header.un.echo.id, ping->send_icmp_package.icmp_header.un.echo.id);
 	printf("\n");
-	// bonus ttl + -s + c + q + i + w
-	// -v + -? don't launch ping
-	// patch broadcast
-	// test -v
-	// patch ttl exceeded
 	gettimeofday(&start_tv, NULL);
 	for(int i = 0; i < ping->iterations; i++)
 	{

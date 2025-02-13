@@ -21,6 +21,8 @@
 # define ICMP_FILTER	1
 # define DEFAULT_ICMP_DATA_SIZE 56
 # define ICMP_HEADER_SIZE sizeof(struct icmphdr)
+# define FLAG_VERBOSE (1 << 0)  // 0001
+# define FLAG_QUIET (1 << 1)    // 0010
 
 typedef struct s_sequence
 {
