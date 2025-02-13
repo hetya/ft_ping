@@ -67,5 +67,7 @@ void print_statistics(t_ping *ping);
 int parse_args(t_ping *ping, int argc, char **argv);
 void print_ip_packet_resume(t_ping *ping, struct iphdr *ip_header);
 void print_ip_and_icmp_details(struct iphdr *ip_header, struct icmphdr *icmp_header);
+double ft_sqrt(double num);
+void display_help(char *name);
 
 #endif

@@ -7,6 +7,7 @@ PROGRAM = ft_ping
 SRCS_PATH		=	srcs
 SRCS    =	main.c \
 			icmp.c \
+			print.c \
 			utils.c
 			
 

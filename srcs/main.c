@@ -14,7 +14,91 @@
 
 t_ping *g_ping = 0;
 
-int	create_socket_and_connect(t_ping *ping)
+int parse_args(t_ping *ping, int argc, char **argv)
+{
+    int     opt;
+    char    *error_ptr;
+    long    option_value;
+
+    static struct option long_options[] = {
+    {"count", required_argument, NULL, 'c'},
+    {"interval", required_argument, NULL, 'i'},
+    {"ttl", required_argument, NULL, 256},
+    {"verbose", no_argument, NULL, 'v'},
+    {"quiet", no_argument, NULL, 'q'},
+    {"timeout", required_argument, NULL, 'w'},
+    {"help", no_argument, NULL, '?'},
+    {NULL, 0, NULL, 0}
+    };
+    ping->verbose = 0;
+    ping->iterations = UINT16_MAX;
+    ping->interval_in_s = 1;
+    ping->ttl = 64;
+    ping->timeout_in_s = 0;
+    while ((opt = getopt_long(argc, argv, "vc:qi:w:?", long_options, NULL)) != -1)
+    {
+        switch (opt) {
+            case 'v': // verbose
+                ping->verbose |= FLAG_VERBOSE;
+                break;
+            case 'q': // quiet
+                ping->verbose |= FLAG_QUIET;
+                break;
+            case 'c': // number of packets to send
+               option_value = strtol(optarg, &error_ptr, 10);
+                if (*error_ptr != '\0' || option_value < 0 || option_value > UINT16_MAX)
+                {
+                    fprintf(stderr, "Invalid packet count: %s\n", optarg);
+                    return -1;
+                }
+                if (option_value == 0)
+                    break;
+                ping->iterations = option_value;
+                break;
+            case 'i': // interval between packets
+                option_value = strtol(optarg, &error_ptr, 10);
+                if (*error_ptr != '\0' || option_value <= 0 || option_value > UINT64_MAX)
+                {
+                    fprintf(stderr, "Invalid interval: %s\n", optarg);
+                    return -1;
+                }
+                ping->interval_in_s = option_value;
+                break;
+            case 256: // ttl
+                option_value = strtol(optarg, &error_ptr, 10);
+                if (*error_ptr != '\0' || option_value <= 0 || option_value > 255)
+                {
+                    fprintf(stderr, "Invalid ttl: %s\n", optarg);
+                    return -1;
+                }
+                ping->ttl = option_value;
+                break;
+            case 'w': // timeout
+                option_value = strtol(optarg, &error_ptr, 10);
+                if (*error_ptr != '\0' || option_value <= 0 || option_value > UINT64_MAX)
+                {
+                    fprintf(stderr, "Invalid timeout: %s\n", optarg);
+                    return -1;
+                }
+                ping->timeout_in_s = option_value;
+                break;
+            case '?':
+                display_help(argv[0]);
+                ping->iterations = 0;
+                return (1);
+        }
+    }
+    if (optind >= argc)
+    {
+        fprintf(stderr, "ft_ping: missing host operand\n");
+        fprintf(stderr, "Try %s '-?' for more information.\n", argv[0]);
+        return (-1);
+    }
+    ping->dest_hostname = argv[optind];
+    return (0);
+}
+
+int	resolve_and_create_socket(t_ping *ping)
 {
 	struct addrinfo	hints;
 	struct addrinfo	*res;
@@ -79,7 +163,6 @@ int	main(int argc, char **argv)
 	struct sockaddr_in	dest_addr;
 	struct sockaddr_in	reply_addr;
 
-
 	if (getuid() != 0)
 	{
 		fprintf(stderr, "You must use root privilege to run this program.\n");
@@ -100,7 +183,7 @@ int	main(int argc, char **argv)
 		clean_ping(ping);
 		return (1);
 	}
-	if (create_socket_and_connect(ping) == -1)
+	if (resolve_and_create_socket(ping) == -1)
 	{
 		clean_ping(ping);
 		return (1);
