@@ -49,6 +49,8 @@ int parse_args(t_ping *ping, int argc, char **argv)
                 if (*error_ptr != '\0' || option_value < 0 || option_value > UINT16_MAX)
                 {
                     fprintf(stderr, "Invalid packet count: %s\n", optarg);
+					if (option_value > UINT16_MAX)
+						fprintf(stderr, "Packet count must be less than %d\n", UINT16_MAX);
                     return (-1);
                 }
                 if (option_value == 0)
@@ -57,9 +59,11 @@ int parse_args(t_ping *ping, int argc, char **argv)
                 break;
             case 'i': // interval between packets
                 option_value = strtol(optarg, &error_ptr, 10);
-                if (*error_ptr != '\0' || option_value <= 0 || option_value > UINT64_MAX)
+                if (*error_ptr != '\0' || option_value <= 0 || option_value > 2678400)
                 {
                     fprintf(stderr, "Invalid interval: %s\n", optarg);
+					if (option_value > 2678400)
+						fprintf(stderr, "Interval must be less than 2678400 seconds\n");
                     return (-1);
                 }
                 ping->interval_in_s = option_value;
@@ -75,9 +79,11 @@ int parse_args(t_ping *ping, int argc, char **argv)
                 break;
             case 'w': // timeout
                 option_value = strtol(optarg, &error_ptr, 10);
-                if (*error_ptr != '\0' || option_value <= 0 || option_value > UINT64_MAX)
+                if (*error_ptr != '\0' || option_value <= 0 || option_value > 2678400)
                 {
                     fprintf(stderr, "Invalid timeout: %s\n", optarg);
+					if (option_value > 2678400)
+						fprintf(stderr, "Timeout must be less than 2678400 seconds\n");
                     return (-1);
                 }
                 ping->timeout_in_s = option_value;

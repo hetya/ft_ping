@@ -29,7 +29,6 @@ void create_icmp_package(t_ping *ping)
 int check_duplicate(t_ping *ping, int sequence, uint16_t checksum)
 {
 	t_sequence	*list;
-	t_sequence	*new_sequence;
 
 	list = ping->received_sequence;
 	while (list && list->next)
@@ -109,7 +108,7 @@ int extract_package(t_ping *ping, char *received_buffer, int len_received_ip_pac
 		return (1);
 	ip_header->check = tmp_checksum;
     if (ip_header->protocol != IPPROTO_ICMP)
-        return (1);
+		return (1);
 
 	// ICMP header starts after IP header
 	struct icmphdr *icmp_header = (struct icmphdr *)(received_buffer + ip_header_len);

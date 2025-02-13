@@ -49,9 +49,9 @@ double ft_sqrt(double num)
 	if (num < 0)
 		return (-1);
 	if (num == 0)
-        return (0);
-    while (fabs(guess * guess - num) > epsilon)
-        guess = (guess + num / guess) / 2.0;
+		return (0);
+	while (fabs(guess * guess - num) > epsilon)
+		guess = (guess + num / guess) / 2.0;
 	return (guess);
 }
 

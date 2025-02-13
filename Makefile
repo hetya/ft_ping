@@ -28,7 +28,7 @@ INCLUDES_FILES		=	$(addprefix $(INCLUDES_PATH)/, $(INCLUDES))
 CC				= gcc
 
 FLAGS			= -I./$(INCLUDES_PATH)
-# FLAGS			+= -Wall -Wextra -Werror
+FLAGS			+= -Wall -Wextra -Werror
 FLAGS			+= -fsanitize=address -g3
 
 # --> RULES --------------------------------------------------------------------
