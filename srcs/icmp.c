@@ -28,8 +28,8 @@ void create_icmp_package(t_ping *ping)
 
 int check_duplicate(t_ping *ping, int sequence, uint16_t checksum)
 {
-	t_sequence *list;
-	t_sequence *new_sequence;
+	t_sequence	*list;
+	t_sequence	*new_sequence;
 
 	list = ping->received_sequence;
 	while (list && list->next)
@@ -43,8 +43,8 @@ int check_duplicate(t_ping *ping, int sequence, uint16_t checksum)
 
 int save_sequence(t_ping *ping, int sequence, double request_time, uint16_t checksum)
 {
-	t_sequence *list;
-	t_sequence *new_sequence;
+	t_sequence	*list;
+	t_sequence	*new_sequence;
 
 	list = ping->received_sequence;
 	while (list && list->next)
@@ -95,9 +95,10 @@ int check_icmp_type(int type)
 
 int extract_package(t_ping *ping, char *received_buffer, int len_received_ip_packet, double request_time)
 {
-	uint16_t tmp_checksum;
-	int status = 0;
+	uint16_t	tmp_checksum;
+	int			status;
 
+	status = 0;
 	if (len_received_ip_packet < (int)(sizeof(struct iphdr) + sizeof(struct icmphdr)))
 		return (1);
     struct iphdr *ip_header = (struct iphdr *)received_buffer;

@@ -16,9 +16,9 @@ t_ping *g_ping = 0;
 
 int parse_args(t_ping *ping, int argc, char **argv)
 {
-    int     opt;
-    char    *error_ptr;
-    long    option_value;
+    int		opt;
+    char	*error_ptr;
+    long	option_value;
 
     static struct option long_options[] = {
     {"count", required_argument, NULL, 'c'},
@@ -49,7 +49,7 @@ int parse_args(t_ping *ping, int argc, char **argv)
                 if (*error_ptr != '\0' || option_value < 0 || option_value > UINT16_MAX)
                 {
                     fprintf(stderr, "Invalid packet count: %s\n", optarg);
-                    return -1;
+                    return (-1);
                 }
                 if (option_value == 0)
                     break;
@@ -60,7 +60,7 @@ int parse_args(t_ping *ping, int argc, char **argv)
                 if (*error_ptr != '\0' || option_value <= 0 || option_value > UINT64_MAX)
                 {
                     fprintf(stderr, "Invalid interval: %s\n", optarg);
-                    return -1;
+                    return (-1);
                 }
                 ping->interval_in_s = option_value;
                 break;
@@ -69,7 +69,7 @@ int parse_args(t_ping *ping, int argc, char **argv)
                 if (*error_ptr != '\0' || option_value <= 0 || option_value > 255)
                 {
                     fprintf(stderr, "Invalid ttl: %s\n", optarg);
-                    return -1;
+                    return (-1);
                 }
                 ping->ttl = option_value;
                 break;
@@ -78,7 +78,7 @@ int parse_args(t_ping *ping, int argc, char **argv)
                 if (*error_ptr != '\0' || option_value <= 0 || option_value > UINT64_MAX)
                 {
                     fprintf(stderr, "Invalid timeout: %s\n", optarg);
-                    return -1;
+                    return (-1);
                 }
                 ping->timeout_in_s = option_value;
                 break;
