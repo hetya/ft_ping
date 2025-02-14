@@ -1,15 +1,3 @@
-/* ************************************************************************** */
-/*                                                                            */
-/*                                                        :::      ::::::::   */
-/*   main.c                                             :+:      :+:    :+:   */
-/*                                                    +:+ +:+         +:+     */
-/*   By: unknown <unknown>                          +#+  +:+       +#+        */
-/*                                                +#+#+#+#+#+   +#+           */
-/*   Created: 2025/01/28 16:47:03 by unknown           #+#    #+#             */
-/*   Updated: 2025/02/10 22:01:55 by unknown          ###   ########.fr       */
-/*                                                                            */
-/* ************************************************************************** */
-
 #include "ft_ping.h"
 
 t_ping *g_ping = 0;
@@ -90,8 +78,8 @@ int parse_args(t_ping *ping, int argc, char **argv)
                 break;
             case '?':
                 display_help(argv[0]);
-                ping->iterations = 0;
-                return (1);
+                clean_ping(ping);
+                exit(0);
         }
     }
     if (optind >= argc)
@@ -239,5 +227,5 @@ int	main(int argc, char **argv)
 	}
 	print_statistics(g_ping);
 	clean_ping(g_ping);
-	exit(0);
+	return (0);
 }
