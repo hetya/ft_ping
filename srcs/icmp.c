@@ -145,7 +145,7 @@ int extract_package(t_ping *ping, char *received_buffer, int len_received_ip_pac
 	}
 	else
 	{
-		if (ping->verbose & FLAG_VERBOSE)
+		if (ping->verbose & FLAG_VERBOSE && len_received_ip_packet >= (int)(sizeof(struct iphdr) + sizeof(struct icmphdr)) * 2)
 		{
 			// retrieve the failed packet
 			int offset = ip_header->ihl * 4 + sizeof(struct icmphdr);
