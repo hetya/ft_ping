@@ -29,6 +29,8 @@ And requires to use raw sockets and packet structures.
 ``` SHELL
 ./ft_ping google.com
 ```
+![image](https://github.com/user-attachments/assets/7c6fbe7f-8043-4de7-8d92-c50e35049405)
+
 ## Options
 
 -? : Display help message
